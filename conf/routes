@@ -1,0 +1,16 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# https://www.playframework.com/documentation/latest/ScalaRouting
+# ~~~~
+
+# Create a new user request
+POST     /users                     controllers.LoginController.register()
+
+# Create a lobby ws
+POST    /lobby                       controllers.LobbyController.createLobby()
+
+# Get A users display name
+GET     /user/:id                  controllers.UserController.getUserDisplayName(id: String)
+
+# join a lobby ws
+GET      /lobby/:id/ws                        controllers.LobbyController.joinLobby(id:String) 
