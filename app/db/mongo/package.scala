@@ -14,7 +14,7 @@ import org.bson.UuidRepresentation
 package object mongo {
   def getDatabase(): MongoDatabase = {
     val uri: String =
-      "mongodb+srv://scala-app:fdjsklafdjskl@cardsite-db.zllsp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+      "mongodb+srv://scala-app:eJe7JIsy3QJ6y3hA@cardsite-db.zllsp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
     System.setProperty("org.mongodb.async.type", "netty")
     val mongoClient = MongoClient(uri)
     mongoClient.getDatabase("test")
