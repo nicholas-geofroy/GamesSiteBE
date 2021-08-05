@@ -10,11 +10,13 @@ import org.bson.codecs.configuration.CodecRegistries.{
 }
 import org.bson.codecs.UuidCodec
 import org.bson.UuidRepresentation
+import play.api.Configuration
 
 package object mongo {
-  def getDatabase(): MongoDatabase = {
+  def getDatabase(config: Configuration): MongoDatabase = {
+    val password = config.get[String]("mongodb.password")
     val uri: String =
-      "mongodb+srv://scala-app:eJe7JIsy3QJ6y3hA@cardsite-db.zllsp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+      s"mongodb+srv://scala-app:$password@cardsite-db.zllsp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
     System.setProperty("org.mongodb.async.type", "netty")
     val mongoClient = MongoClient(uri)
     mongoClient.getDatabase("test")

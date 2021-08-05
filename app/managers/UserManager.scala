@@ -29,7 +29,7 @@ class UserManager @Inject() (
   val codecRegistry =
     fromRegistries(fromProviders(userCodecProvider), getBaseCodecRegistry())
 
-  val database: MongoDatabase = getDatabase().withCodecRegistry(codecRegistry)
+  val database: MongoDatabase = getDatabase(config).withCodecRegistry(codecRegistry)
   val userCollection: MongoCollection[User] = database.getCollection("users")
 
   def createUser(request: NewUserRequest): Future[User] = {
