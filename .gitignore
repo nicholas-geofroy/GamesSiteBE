@@ -10,4 +10,4 @@ target
 /.g8
 /.metals
 /.vscode
-/conf/application.conf
+conf/application.conf
