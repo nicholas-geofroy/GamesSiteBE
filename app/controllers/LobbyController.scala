@@ -27,10 +27,12 @@ import scala.concurrent.Future
 import pdi.jwt.JwtClaim
 import scala.collection.mutable
 import models.lobbymodels._
+import play.api.Configuration
 
 @Singleton
 class LobbyController @Inject() (
     val cc: ControllerComponents,
+    val config: Configuration,
     val authAction: AuthAction,
     val authService: AuthService,
     implicit val ec: ExecutionContext
@@ -39,7 +41,7 @@ class LobbyController @Inject() (
   val lobbyCodecProvider = Macros.createCodecProvider[Lobby]()
   val codecRegistry =
     fromRegistries(fromProviders(lobbyCodecProvider), getBaseCodecRegistry())
-  val database: MongoDatabase = getDatabase().withCodecRegistry(codecRegistry)
+  val database: MongoDatabase = getDatabase(config).withCodecRegistry(codecRegistry)
 
   val lobbyCollection: MongoCollection[Lobby] =
     database.getCollection("lobbies")
