@@ -26,8 +26,6 @@ final case class Join(user: String, out: ActorRef)
 final case class Leave(user: String)
 final case class StartGame()
 final case class SetGame(game: GameType)
-final case class Play(user: String, card: Card)
-final case class Bet(user: String, bet: Int)
 final case class Ping()
 
 final case class PlayerActionMsg(actionType: String, data: JsValue)
@@ -135,7 +133,7 @@ class LobbyManager(val id: String) extends Actor {
   import context._
 
   val users: Map[String, ActorRef] = Map.empty
-  var gameType: GameType = games.GameType.ohHell
+  var gameType: GameType = games.GameType.justOne
   var game: Game = null
 
   // if we don't receive mesages after 30s, timeout
@@ -150,10 +148,15 @@ class LobbyManager(val id: String) extends Actor {
       println(f"User ${user} joined lobby ${id}")
       users.put(user, out)
       users.foreach(_._2 ! LobbyUsersMsg(id, users.map(_._1).toList))
+      sendAll(LobbyGameTypeMsg(gameType))
     case Leave(user) =>
       println(f"User ${user} left lobby ${id}")
       users.remove(user)
       users.foreach(_._2 ! LobbyUsersMsg(id, users.map(_._1).toList))
+    case SetGame(newGameType) =>
+      println(f"Set Game to type: ${newGameType}")
+      gameType = newGameType
+      sendAll(LobbyGameTypeMsg(newGameType))
     case msg: StartGame =>
       println("Start Game!")
       val players = users.keySet.toList

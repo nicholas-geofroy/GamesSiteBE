@@ -20,15 +20,21 @@ object Hint {
   implicit val format = Json.format[Hint]
 }
 final case class NextRound() extends Move
-final case class Hide(hint: String) extends Move
-object Hide {
-  implicit val format = Json.format[Hide]
+final case class SetDuplicate(hint: String) extends Move
+object SetDuplicate {
+  implicit val format = Json.format[SetDuplicate]
 }
-final case class Show(hint: String) extends Move
-object Show {
-  implicit val format = Json.format[Show]
+final case class SetUnique(hint: String) extends Move
+object SetUnique {
+  implicit val format = Json.format[SetUnique]
 }
 final case class RevealHints() extends Move
+
+
+case class HintState(hint: String, isHidden: Boolean = true, isDuplicate: Boolean = false)
+object HintState {
+  implicit val format = Json.format[HintState]
+}
 
 class JustOneState(val players: List[String]) extends GameState {
   var roundNum = 0
@@ -40,12 +46,13 @@ class JustOneState(val players: List[String]) extends GameState {
 
 class JustOneRoundState(
     val guesser: String,
-    var hints: Map[String, (String, Boolean)],
+    var hints: Map[String, HintState],
     var guesses: List[String],
     var correct: Boolean = false,
+    var hintsSubmitted: Boolean = false,
     var hintsRevealed: Boolean = false
 ) {
-  def getHints(): Iterable[String] = hints.values.map(_._1.toLowerCase())
+  def getHints(): Iterable[String] = hints.values.map(_.hint)
   def isGuessCorrent(guess: String): Boolean = getHints().exists(g => g.equals(guess))
 }
 
@@ -85,36 +92,41 @@ class JustOne() extends Game {
           return Failure(new InvalidAction())
         }
 
-        round.hints = round.hints + (fromPlayer -> (hint, false))
+        round.hints = round.hints + (fromPlayer -> HintState(hint))
 
         // if all hints submitted then reveal the hints
         if (round.hints.size == state.players.size - 1) {
           val hintCounts = round.getHints().groupBy(x=>x)
-          // filter hints to the non duplicated ones
-          round.hints = round.hints.map(e => (e._1, (e._2._1, hintCounts(e._1).size > 1)))
+          round.hints = round.hints.map(e => (e._1, HintState(e._2.hint, e._2.isHidden, hintCounts(e._1).size > 1)))
         }
 
         return Success(())
       
-        case Hide(hint) => 
+        case SetDuplicate(hintFromPlayer) => 
           if (fromPlayer.equals(round.guesser)) {
             return Failure(new InvalidAction())
           }
 
-          round.hints = round.hints + (hint -> (round.hints(hint)._1, true))
-          return Success(())
-        case Show(hint) =>
+          return round.hints.get(hintFromPlayer).map(hint => {
+            round.hints = round.hints + (hintFromPlayer -> HintState(hint.hint, true, true))
+            Success(())  
+          }).getOrElse(Failure(new InvalidAction()))
+          
+        case SetUnique(hintFromPlayer) =>
           if (fromPlayer.equals(round.guesser)) {
             return Failure(new InvalidAction())
           }
-          
-          round.hints = round.hints + (hint -> (round.hints(hint)._1, false))
-          return Success(())
+
+          return round.hints.get(hintFromPlayer).map(hint => {
+            round.hints = round.hints + (hintFromPlayer -> HintState(hint.hint, true, false))
+            Success(())  
+          }).getOrElse(Failure(new InvalidAction()))
         case RevealHints() =>
           if (fromPlayer.equals(round.guesser)) {
             return Failure(new InvalidAction())
           }
 
+          round.hints = round.hints.map(pair => (pair._1, HintState(pair._2.hint, false, pair._2.isDuplicate)))
           round.hintsRevealed = true
           return Success(())
         case NextRound() =>
@@ -135,8 +147,8 @@ class JustOne() extends Game {
       case "Guess" => JsResult.toTry(data.validate[Guess], err => new InvalidMsgException())
       case "Hint" => JsResult.toTry(data.validate[Hint], err => new InvalidMsgException())
       case "NextRound" => Success(NextRound())
-      case "Hide" => JsResult.toTry(data.validate[Hide], err => new InvalidMsgException())
-      case "Show" => JsResult.toTry(data.validate[Show], err => new InvalidMsgException())
+      case "SetDuplicate" => JsResult.toTry(data.validate[SetDuplicate], err => new InvalidMsgException())
+      case "SetUnique" => JsResult.toTry(data.validate[SetUnique], err => new InvalidMsgException())
       case "RevealHints" => Success(RevealHints())
     }
   }
