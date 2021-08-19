@@ -31,17 +31,21 @@ object SetUnique {
 final case class RevealHints() extends Move
 
 
-case class HintState(hint: String, isHidden: Boolean = true, isDuplicate: Boolean = false)
+case class HintState(hint: String, isDuplicate: Boolean = false)
 object HintState {
   implicit val format = Json.format[HintState]
 }
 
-class JustOneState(val players: List[String]) extends GameState {
-  var roundNum = 0
-  var roundStates: List[JustOneRoundState] = List.empty
+class JustOneState(
+    val players: List[String],
+    var roundNum: Int = 0,
+    var roundStates: List[JustOneRoundState] = List.empty 
+  ) extends GameState {
   def curRound() = roundStates.last
-
   def toJsonWithFilter(player: String) = JsObject(Map.empty[String, JsValue])
+}
+
+object JustOneState {
 }
 
 class JustOneRoundState(
@@ -54,6 +58,31 @@ class JustOneRoundState(
 ) {
   def getHints(): Iterable[String] = hints.values.map(_.hint)
   def isGuessCorrent(guess: String): Boolean = getHints().exists(g => g.equals(guess))
+  def filter(forPlayer: String) = {
+    var filteredHints: Map[String, HintState] = Map.empty
+    if (forPlayer.equals(guesser)) {
+      if (!hintsRevealed) {
+        filteredHints = hints.map(t => (t._1, HintState("", false))).toMap
+      } else {
+        filteredHints = hints.map(t => (t._1, if (t._2.isDuplicate) HintState("", true) else t._2)).toMap
+      }
+    } else {
+      if (!hintsSubmitted) {
+        filteredHints = hints.map(t => (t._1, HintState("", false))).toMap
+      } else {
+        filteredHints = hints
+      }
+    }
+
+    new JustOneRoundState(
+      guesser,
+      filteredHints,
+      guesses,
+      correct,
+      hintsSubmitted,
+      hintsRevealed
+    )
+  }
 }
 
 class JustOne() extends Game {
@@ -97,7 +126,7 @@ class JustOne() extends Game {
         // if all hints submitted then reveal the hints
         if (round.hints.size == state.players.size - 1) {
           val hintCounts = round.getHints().groupBy(x=>x)
-          round.hints = round.hints.map(e => (e._1, HintState(e._2.hint, e._2.isHidden, hintCounts(e._1).size > 1)))
+          round.hints = round.hints.map(e => (e._1, HintState(e._2.hint, hintCounts(e._1).size > 1)))
         }
 
         return Success(())
@@ -108,7 +137,7 @@ class JustOne() extends Game {
           }
 
           return round.hints.get(hintFromPlayer).map(hint => {
-            round.hints = round.hints + (hintFromPlayer -> HintState(hint.hint, true, true))
+            round.hints = round.hints + (hintFromPlayer -> HintState(hint.hint, true))
             Success(())  
           }).getOrElse(Failure(new InvalidAction()))
           
@@ -118,7 +147,7 @@ class JustOne() extends Game {
           }
 
           return round.hints.get(hintFromPlayer).map(hint => {
-            round.hints = round.hints + (hintFromPlayer -> HintState(hint.hint, true, false))
+            round.hints = round.hints + (hintFromPlayer -> HintState(hint.hint, false))
             Success(())  
           }).getOrElse(Failure(new InvalidAction()))
         case RevealHints() =>
