@@ -155,7 +155,7 @@ class JustOne() extends Game {
             return Failure(new InvalidAction())
           }
 
-          round.hints = round.hints.map(pair => (pair._1, HintState(pair._2.hint, false, pair._2.isDuplicate)))
+          round.hints = round.hints.map(pair => (pair._1, HintState(pair._2.hint, pair._2.isDuplicate)))
           round.hintsRevealed = true
           return Success(())
         case NextRound() =>
