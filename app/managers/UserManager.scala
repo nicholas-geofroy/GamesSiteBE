@@ -44,6 +44,7 @@ class UserManager @Inject() (
   }
 
   def getUser(userId: String): Future[Option[User]] = {
+    println("get user")
     return authManager.getUser(userId)
   }
 }

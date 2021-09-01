@@ -26,6 +26,7 @@ final case class Join(user: String, out: ActorRef)
 final case class Leave(user: String)
 final case class StartGame()
 final case class SetGame(game: GameType)
+final case class GetState(user: String)
 final case class Ping()
 
 final case class PlayerActionMsg(actionType: String, data: JsValue)
@@ -110,10 +111,15 @@ class LobbyActor(out: ActorRef, manager: ActorRef, authService: AuthService)
         case "Start" =>
           println("Start game message received")
           manager ! StartGame()
+        case "GetState" =>
+          println("GetState Message Received")
+          manager ! GetState(userId)
         case "GameAction" =>
+          println("Game Action Received")
           data.validate[PlayerActionMsg].asOpt match {
-            case Some(PlayerActionMsg(aType, data)) => manager ! PlayerAction(userId, aType, data)
-            case None       => sendErrorMessage("Invalid data for GameAction Command")
+            case Some(PlayerActionMsg(aType, data)) =>
+              manager ! PlayerAction(userId, aType, data)
+            case None => sendErrorMessage("Invalid data for GameAction Command")
           }
         case _ =>
           println("Unknown Message Sent from client")
@@ -161,10 +167,10 @@ class LobbyManager(val id: String) extends Actor {
       println("Start Game!")
       val players = users.keySet.toList
       game = gameType match {
-        case games.GameType.ohHell => new OhHell()
+        case games.GameType.ohHell  => new OhHell()
         case games.GameType.justOne => new JustOne()
       }
-      
+
       val result = game.tryInit(players)
       if (result.isFailure) {
         sendAll(
@@ -175,7 +181,6 @@ class LobbyManager(val id: String) extends Actor {
         )
       } else {
         sendAll(StartGameMsg())
-        sendState()
         become(gameReceive)
       }
     case ReceiveTimeout =>
@@ -193,7 +198,7 @@ class LobbyManager(val id: String) extends Actor {
       if (users.contains(user)) {
         println("Admitted because the user was already in the lobby")
         users.put(user, out)
-        sendState()
+        sendAll(LobbyGameTypeMsg(gameType))
       } else {
         println("Lobby already has started, can't join")
         sender() ! ErrorMsg(
@@ -203,8 +208,23 @@ class LobbyManager(val id: String) extends Actor {
       }
     case Leave(user) =>
       println(f"User ${user} left the lobby during the game")
+    case GetState(user) =>
+      println(f"sending state to user ${user}")
+      sender() ! LobbyStateMsg(game.getState().toJsonWithFilter(user))
     case action: PlayerAction =>
-      game.parseAction(action)
+      val fromPlayer = action.player
+      val result = game
+        .parseAction(action)
+        .flatMap(move => game.receiveAction(fromPlayer, move))
+
+      result match {
+        case Success(_) => sendState()
+        case Failure(e) => {
+          sendError(fromPlayer, e.getMessage())
+          println("Failure in Processing Action:")
+          e.printStackTrace()
+        }
+      }
   }
 
   def sendFailureIfFail(user: String, attempt: Try[_]) = {
