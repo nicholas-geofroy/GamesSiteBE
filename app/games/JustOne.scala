@@ -15,11 +15,14 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads
 import play.api.libs.json.JsArray
 import play.api.libs.json.JsNumber
+import akka.parboiled2.Parser
 
 final case class Guess(guess: String) extends Move
 object Guess {
   implicit val format = Json.format[Guess]
 }
+final case class CorrectGuess() extends Move
+final case class WrongGuess() extends Move
 final case class Hint(hint: String) extends Move
 object Hint {
   implicit val format = Json.format[Hint]
@@ -58,14 +61,18 @@ class JustOneState(
   )
 }
 
+case class GuessState(guess: String, isCorrect: Boolean, userCheck: Boolean)
+object GuessState {
+  implicit val format = Json.format[GuessState]
+}
+
 object JustOneState {}
 
 case class JustOneRoundState(
     val guesser: String,
     var hints: Map[String, HintState],
-    var guesses: List[String],
+    var guesses: List[GuessState],
     var word: String,
-    var correct: Boolean = false,
     var hintsSubmitted: Boolean = false,
     var hintsRevealed: Boolean = false
 ) {
@@ -95,7 +102,6 @@ case class JustOneRoundState(
       filteredHints,
       guesses,
       if (meGuesser) "" else word,
-      correct,
       hintsSubmitted,
       hintsRevealed
     )
@@ -130,12 +136,39 @@ class JustOne() extends Game {
           return Failure(new InvalidAction())
         }
 
-        round.guesses = round.guesses :+ guess
+        var isCorrect = false
         if (round.isGuessCorrent(guess)) {
           println("It was correct!")
-          round.correct = true
+          isCorrect = true
+        }
+        round.guesses = round.guesses :+ GuessState(guess, isCorrect, false)
+
+        return Success(())
+
+      case CorrectGuess() =>
+        println(f"Player ${fromPlayer} submitted a correct guess msg")
+        if (fromPlayer.equals(round.guesser)) {
+          println("guesser can't submit a judgement on the guess")
+          return Failure(new InvalidAction())
         }
 
+        round.guesses =
+          round.guesses.init :+ GuessState(round.guesses.last.guess, true, true)
+
+        return Success(())
+
+      case WrongGuess() =>
+        println(f"Player ${fromPlayer} submitted a wrong guess msg")
+        if (fromPlayer.equals(round.guesser)) {
+          println("guesser can't submit a judgement on the guess")
+          return Failure(new InvalidAction())
+        }
+
+        round.guesses = round.guesses.init :+ GuessState(
+          round.guesses.last.guess,
+          false,
+          true
+        )
         return Success(())
 
       case Hint(hint) =>
@@ -239,7 +272,12 @@ class JustOne() extends Game {
           data.validate[SetUnique],
           err => new InvalidMsgException()
         )
-      case "RevealHints" => Success(RevealHints())
+      case "RevealHints"  => Success(RevealHints())
+      case "CorrectGuess" => Success(CorrectGuess())
+      case "WrongGuess"   => Success(WrongGuess())
+      case _ =>
+        println(f"Received invalid type: ${msgType}")
+        Failure(new InvalidMsgException())
     }
   }
 }

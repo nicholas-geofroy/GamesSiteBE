@@ -199,6 +199,7 @@ class LobbyManager(val id: String) extends Actor {
         println("Admitted because the user was already in the lobby")
         users.put(user, out)
         sendAll(LobbyGameTypeMsg(gameType))
+        sendState()
       } else {
         println("Lobby already has started, can't join")
         sender() ! ErrorMsg(
