@@ -239,7 +239,7 @@ class JustOne() extends Game {
   }
 
   def nextRound() = {
-    val guesser = state.players(state.roundNum)
+    val guesser = state.players(state.roundNum % state.players.length)
     state.roundStates = state.roundStates :+ new JustOneRoundState(
       guesser,
       Map.empty,
