@@ -16,6 +16,12 @@ import play.api.libs.json.Reads
 import play.api.libs.json.JsArray
 import play.api.libs.json.JsNumber
 import akka.parboiled2.Parser
+import play.api.Play
+import scala.reflect.io.VirtualFile
+import play.api.Environment
+import java.io.FileInputStream
+import scala.util.Random
+import play.api.libs.json.JsString
 
 final case class Guess(guess: String) extends Move
 object Guess {
@@ -112,8 +118,16 @@ object JustOneRoundState {
   implicit val format = Json.format[JustOneRoundState]
 }
 
-class JustOne() extends Game {
+class JustOne(environment: Environment) extends Game {
   var state: JustOneState = null
+  val words = {
+    val json =
+      Json.parse(
+        new FileInputStream(environment.getFile("app/assets/nouns.json"))
+      )
+    val nounsList = (json \ "nouns").as[JsArray].value.map(_.as[JsString].value)
+    Random.shuffle(nounsList)
+  }
 
   def getState() = state
 
@@ -244,13 +258,13 @@ class JustOne() extends Game {
       guesser,
       Map.empty,
       List.empty,
-      generateWord()
+      generateWord(state.roundNum)
     )
     state.roundNum += 1
   }
 
-  def generateWord(): String = {
-    return "word"
+  def generateWord(roundNum: Int): String = {
+    return words(roundNum % words.length)
   }
 
   def parseAction(msg: PlayerAction): Try[Move] = {

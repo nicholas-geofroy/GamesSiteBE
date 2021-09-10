@@ -28,6 +28,7 @@ import pdi.jwt.JwtClaim
 import scala.collection.mutable
 import models.lobbymodels._
 import play.api.Configuration
+import play.api.Environment
 
 @Singleton
 class LobbyController @Inject() (
@@ -35,13 +36,15 @@ class LobbyController @Inject() (
     val config: Configuration,
     val authAction: AuthAction,
     val authService: AuthService,
+    val environment: Environment,
     implicit val ec: ExecutionContext
 )(implicit actorSystem: ActorSystem)
     extends AbstractController(cc) {
   val lobbyCodecProvider = Macros.createCodecProvider[Lobby]()
   val codecRegistry =
     fromRegistries(fromProviders(lobbyCodecProvider), getBaseCodecRegistry())
-  val database: MongoDatabase = getDatabase(config).withCodecRegistry(codecRegistry)
+  val database: MongoDatabase =
+    getDatabase(config).withCodecRegistry(codecRegistry)
 
   val lobbyCollection: MongoCollection[Lobby] =
     database.getCollection("lobbies")
@@ -61,19 +64,20 @@ class LobbyController @Inject() (
       }
   }
 
-  implicit val messageFlowTransformer = WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer[LobbyInMsg, LobbyOutMsg]
+  implicit val messageFlowTransformer = WebSocket.MessageFlowTransformer
+    .jsonMessageFlowTransformer[LobbyInMsg, LobbyOutMsg]
 
   def createLobby() = authAction(parse.json) { request =>
-      val lobby = Lobby()
-      val lobbyID = lobby.id.toString()
+    val lobby = Lobby()
+    val lobbyID = lobby.id.toString()
 
-      val lobbyManagerRef = actorSystem.actorOf(
-        LobbyManager.props(lobbyID),
-        "lobby." + lobbyID
-      )
-      lobbyManagers.put(lobby.id.toString(), lobbyManagerRef)
-      Ok(Json.toJson(lobby))
-    }
+    val lobbyManagerRef = actorSystem.actorOf(
+      LobbyManager.props(lobbyID, environment),
+      "lobby." + lobbyID
+    )
+    lobbyManagers.put(lobby.id.toString(), lobbyManagerRef)
+    Ok(Json.toJson(lobby))
+  }
 
   def joinLobby(id: String) =
     WebSocket.acceptOrResult[LobbyInMsg, LobbyOutMsg] { request =>
@@ -83,11 +87,13 @@ class LobbyController @Inject() (
             LobbyActor.props(out, manager, authService)
           }))
         case None =>
-          Future(Left(
-            Results.BadRequest(
-              Json.obj("message" -> f"Invalid lobby id ${id}")
+          Future(
+            Left(
+              Results.BadRequest(
+                Json.obj("message" -> f"Invalid lobby id ${id}")
+              )
             )
-          ))
+          )
       }
     }
 }

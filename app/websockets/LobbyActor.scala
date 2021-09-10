@@ -21,6 +21,7 @@ import games.LobbyState
 import games.GameType.GameType
 import games.Game
 import games.JustOne
+import play.api.Environment
 
 final case class Join(user: String, out: ActorRef)
 final case class Leave(user: String)
@@ -37,13 +38,20 @@ object PlayerActionMsg {
 final case class PlayerAction(player: String, actionType: String, data: JsValue)
 
 object LobbyActor {
-  def props(out: ActorRef, manager: ActorRef, authService: AuthService) = Props(
+  def props(
+      out: ActorRef,
+      manager: ActorRef,
+      authService: AuthService
+  ) = Props(
     new LobbyActor(out, manager, authService)
   )
 }
 
-class LobbyActor(out: ActorRef, manager: ActorRef, authService: AuthService)
-    extends Actor {
+class LobbyActor(
+    out: ActorRef,
+    manager: ActorRef,
+    authService: AuthService
+) extends Actor {
   import context._
 
   //if we dont hear the initial message, then error out
@@ -132,10 +140,12 @@ class LobbyActor(out: ActorRef, manager: ActorRef, authService: AuthService)
 }
 
 object LobbyManager {
-  def props(lobbyId: String) = Props(new LobbyManager(lobbyId))
+  def props(lobbyId: String, environment: Environment) = Props(
+    new LobbyManager(lobbyId, environment)
+  )
 }
 
-class LobbyManager(val id: String) extends Actor {
+class LobbyManager(val id: String, val environment: Environment) extends Actor {
   import context._
 
   val users: Map[String, ActorRef] = Map.empty
@@ -168,7 +178,7 @@ class LobbyManager(val id: String) extends Actor {
       val players = users.keySet.toList
       game = gameType match {
         case games.GameType.ohHell  => new OhHell()
-        case games.GameType.justOne => new JustOne()
+        case games.GameType.justOne => new JustOne(environment)
       }
 
       val result = game.tryInit(players)
