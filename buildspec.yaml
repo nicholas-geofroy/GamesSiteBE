@@ -18,4 +18,4 @@ artifacts:
   files:
     - target/universal/cardsite-1.0-SNAPSHOT.zip
     - scripts/**/*
-    - appspec.yaml
+    - appspec.yml
