@@ -1,6 +1,8 @@
 version: 0.0
 os: linux
-files: []
+files:
+  - source: /
+    destination: /var/cardsite
 hooks:
   ApplicationStart:
     - location: scripts/start_server.sh
