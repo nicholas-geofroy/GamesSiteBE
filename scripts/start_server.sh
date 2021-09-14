@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "start scala server"
 current_dir=$(pwd)
 echo "$current_dir"

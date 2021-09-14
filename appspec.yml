@@ -4,6 +4,9 @@ files:
   - source: /
     destination: /var/cardsite
 hooks:
+  ApplicationStop:
+    - location: scripts/stop_app.sh
+      runas: root
   BeforeInstall:
     - location: scripts/install_deps.sh
       runas: root
