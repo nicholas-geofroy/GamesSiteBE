@@ -19,7 +19,6 @@ play_secret=$(aws ssm get-parameters --region us-east-2 --names PLAY_HTTP_SECRET
 unzip -o -q "target/universal/cardsite-1.0-SNAPSHOT.zip"
 chmod +x cardsite-1.0-SNAPSHOT/bin/cardsite
 
-echo "Play Secret: $play_secret"
 nohup cardsite-1.0-SNAPSHOT/bin/cardsite -Dplay.http.secret.key=$play_secret > server.log 2>&1 &
 GAMESITE_PID=$!
 
