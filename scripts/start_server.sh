@@ -16,7 +16,7 @@ echo "$artifacts_dir"
 pushd $artifacts_dir
 
 play_secret=$(aws ssm get-parameters --region us-east-2 --names PLAY_HTTP_SECRET_KEY --with-decryption --query Parameters[0].Value --output text)
-unzip -o "target/universal/cardsite-1.0-SNAPSHOT.zip"
+unzip -o -q "target/universal/cardsite-1.0-SNAPSHOT.zip"
 chmod +x cardsite-1.0-SNAPSHOT/bin/cardsite
 
 echo "Play Secret: $play_secret"
