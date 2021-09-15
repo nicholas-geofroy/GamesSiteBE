@@ -20,7 +20,7 @@ unzip -o -q "target/universal/cardsite-1.0-SNAPSHOT.zip"
 chmod +x cardsite-1.0-SNAPSHOT/bin/cardsite
 
 echo "Play Secret: $play_secret"
-cardsite-1.0-SNAPSHOT/bin/cardsite -Dplay.http.secret.key=$play_secret &
+nohup cardsite-1.0-SNAPSHOT/bin/cardsite -Dplay.http.secret.key=$play_secret > server.log 2>&1 &
 GAMESITE_PID=$!
 
 echo "Spawned gamesite process, PID: $GAMESITE_PID"
