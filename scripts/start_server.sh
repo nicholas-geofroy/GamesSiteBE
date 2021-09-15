@@ -2,6 +2,7 @@
 
 set -e
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 echo "start scala server"
 current_dir=$(pwd)
 echo "$current_dir"
@@ -15,11 +16,17 @@ echo "Cardsite Dir"
 echo "$artifacts_dir"
 pushd $artifacts_dir
 
-play_secret=$(aws ssm get-parameters --region us-east-2 --names PLAY_HTTP_SECRET_KEY --with-decryption --query Parameters[0].Value --output text)
+source "$SCRIPT_DIR/setup_env.sh"
+
+echo "play http secret key $PLAY_HTTP_SECRET_KEY"
+
 unzip -o -q "target/universal/cardsite-1.0-SNAPSHOT.zip"
 chmod +x cardsite-1.0-SNAPSHOT/bin/cardsite
 
-nohup cardsite-1.0-SNAPSHOT/bin/cardsite -Dplay.http.secret.key=$play_secret > server.log 2>&1 &
+nohup cardsite-1.0-SNAPSHOT/bin/cardsite \
+  -Dplay.http.secret.key=$PLAY_HTTP_SECRET_KEY \
+  -Dconfig.resource=prod.conf \
+  > server.log 2>&1 &
 GAMESITE_PID=$!
 
 echo "Spawned gamesite process, PID: $GAMESITE_PID"
