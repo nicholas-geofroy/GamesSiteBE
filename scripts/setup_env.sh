@@ -14,10 +14,10 @@ echo "Params JSON:"
 echo "$params_json"
 
 IFS=$'\n'
-for row in $(echo "$params_json" | jq -c '. | map([.Name, .Value])' | jq @sh)
-do
-  # Run the row through the shell interpreter to remove enclosing double-quotes
-  stripped=$(echo $row | xargs echo)
-  setupEnvVar $stripped
-
+for encoded_row in $(echo "$params_json" | jq -r '.[] | @base64'); do
+  row=$(base64 --decode <<< $encoded_row)
+  env_var_name=$(jq -r '.Name')
+  env_var_val=$(jq -r '.Value')
+  echo "set $env_var_name=$env_var_val"
+  export $env_var_name=$env_var_val
 done
