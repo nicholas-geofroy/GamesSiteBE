@@ -16,8 +16,9 @@ echo "$params_json"
 IFS=$'\n'
 for encoded_row in $(echo "$params_json" | jq -r '.[] | @base64'); do
   row=$(base64 --decode <<< $encoded_row)
-  env_var_name=$(jq -r '.Name')
-  env_var_val=$(jq -r '.Value')
+  echo "row: $row"
+  env_var_name=$(jq -r '.Name' <<< $row)
+  env_var_val=$(jq -r '.Value' <<< $row)
   echo "set $env_var_name=$env_var_val"
   export $env_var_name=$env_var_val
 done
