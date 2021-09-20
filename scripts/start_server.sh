@@ -16,7 +16,7 @@ unzip -o -q "target/universal/cardsite-1.0-SNAPSHOT.zip"
 chmod +x cardsite-1.0-SNAPSHOT/bin/cardsite
 mv app cardsite-1.0-SNAPSHOT/app
 
-nohup cardsite-1.0-SNAPSHOT/bin/cardsite \
+nohup cpulimit -l 30 -- cardsite-1.0-SNAPSHOT/bin/cardsite \
   -Dplay.http.secret.key=$PLAY_HTTP_SECRET_KEY \
   -Dconfig.resource=prod.conf \
   > server.log 2>&1 &

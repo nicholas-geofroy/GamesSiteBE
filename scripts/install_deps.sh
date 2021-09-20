@@ -7,6 +7,6 @@ unzip awscliv2.zip
 sudo ./aws/install
 
 sudo apt-get update
-sudo apt-get install -y java-11-amazon-corretto-jdk jq
+sudo apt-get install -y java-11-amazon-corretto-jdk jq cpulimit
 
  java -version
