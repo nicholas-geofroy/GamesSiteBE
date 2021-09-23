@@ -6,8 +6,11 @@
 # Create a new user request
 POST     /users                     controllers.LoginController.register()
 
-# Create a lobby ws
-POST    /lobby                       controllers.LobbyController.createLobby()
+# Create a lobby
+POST    /lobby                       controllers.LobbyController.createLobby(id="")
+
+# Create a lobby with a specific id
+POST    /lobby/:id                  controllers.LobbyController.createLobby(id: String)
 
 # Get A users display name
 GET     /user/:id                  controllers.UserController.getUserDisplayName(id: String)
