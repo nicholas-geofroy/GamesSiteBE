@@ -67,7 +67,8 @@ class LobbyController @Inject() (
   implicit val messageFlowTransformer = WebSocket.MessageFlowTransformer
     .jsonMessageFlowTransformer[LobbyInMsg, LobbyOutMsg]
 
-  def createLobby(id: String) = authAction(parse.json) { request =>
+  def createLobby(lobbyId: String) = authAction(parse.json) { request =>
+    val id = lobbyId.toLowerCase()
     val lobby = if (id.isEmpty()) Lobby() else Lobby(id)
 
     if (lobbyManagers.contains(lobby.id)) {
@@ -83,8 +84,9 @@ class LobbyController @Inject() (
 
   }
 
-  def joinLobby(id: String) =
+  def joinLobby(lobbyId: String) =
     WebSocket.acceptOrResult[LobbyInMsg, LobbyOutMsg] { request =>
+      val id = lobbyId.toLowerCase()
       lobbyManagers.get(id) match {
         case Some(manager) =>
           Future(Right(ActorFlow.actorRef { out =>
