@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/setup_env.sh"
 
 unzip -o -q "target/universal/cardsite-1.0-SNAPSHOT.zip"
 chmod +x cardsite-1.0-SNAPSHOT/bin/cardsite
-rsync -a app cardsite-1.0-SNAPSHOT/app
+rsync -a --remove-source-files app cardsite-1.0-SNAPSHOT/app
 
 nohup cpulimit -l 30 -- cardsite-1.0-SNAPSHOT/bin/cardsite \
   -Dplay.http.secret.key=$PLAY_HTTP_SECRET_KEY \
