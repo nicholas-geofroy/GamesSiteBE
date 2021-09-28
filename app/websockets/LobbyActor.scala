@@ -29,6 +29,7 @@ final case class StartGame()
 final case class SetGame(game: GameType)
 final case class GetState(user: String)
 final case class Ping()
+final case class GetUsers()
 
 final case class PlayerActionMsg(actionType: String, data: JsValue)
 object PlayerActionMsg {
@@ -119,6 +120,9 @@ class LobbyActor(
         case "Start" =>
           println("Start game message received")
           manager ! StartGame()
+        case "GetUsers" =>
+          println("get users msg received")
+          manager ! GetUsers()
         case "GetState" =>
           println("GetState Message Received")
           manager ! GetState(userId)
@@ -157,6 +161,8 @@ class LobbyManager(val id: String, val environment: Environment) extends Actor {
 
   def baseReceive: Receive = {
     case Ping => {} //ignore pings
+    case GetUsers =>
+      sender() ! LobbyUsersMsg(id, users.keys.toList)
   }
 
   def receive: Receive = baseReceive orElse {
