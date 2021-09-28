@@ -83,7 +83,8 @@ case class JustOneRoundState(
     var hintsRevealed: Boolean = false
 ) {
   def getHints(): Iterable[String] = hints.values.map(_.hint)
-  def isGuessCorrent(guess: String): Boolean = guess.equals(word)
+  def isGuessCorrent(guess: String): Boolean =
+    guess.toLowerCase().equals(word.toLowerCase())
   def filter(forPlayer: String): JustOneRoundState = {
     var filteredHints: Map[String, HintState] = Map.empty
     var meGuesser = forPlayer.equals(guesser)
