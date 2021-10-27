@@ -17,3 +17,7 @@ GET     /user/:id                  controllers.UserController.getUserDisplayName
 
 # join a lobby ws
 GET      /lobby/:id/ws                        controllers.LobbyController.joinLobby(id:String) 
+
+# Options routes
+OPTIONS    /          controllers.ApplicationController.options(path: String ?= "")
+OPTIONS    /*path     controllers.ApplicationController.options(path)
