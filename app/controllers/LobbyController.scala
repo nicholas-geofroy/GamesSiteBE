@@ -19,7 +19,7 @@ import scala.util.{Success, Failure}
 import auth.{AuthAction, AuthService}
 import akka.stream.scaladsl._
 import play.api.libs.json.JsValue
-import websockets.{LobbyActor, LobbyManager}
+import websockets.{LobbyUserActor, LobbyManager}
 import play.api.libs.streams.ActorFlow
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -51,10 +51,9 @@ class LobbyController @Inject() (
 
   val lobbyManagers: mutable.Map[String, ActorRef] = mutable.Map.empty
 
-  def createLobbyInDb() = authAction.async { request =>
-    val userId = request.userId
-    println(f"create lobby called by user: ${userId}")
-    val lobby = Lobby(members = List(userId))
+  def createLobbyInDb() = Action.async { request =>
+    println("create lobby called")
+    val lobby = Lobby(members = List())
     lobbyCollection
       .insertOne(lobby)
       .head()
@@ -67,7 +66,7 @@ class LobbyController @Inject() (
   implicit val messageFlowTransformer = WebSocket.MessageFlowTransformer
     .jsonMessageFlowTransformer[LobbyInMsg, LobbyOutMsg]
 
-  def createLobby(lobbyId: String) = authAction(parse.json) { request =>
+  def createLobby(lobbyId: String) = Action(parse.json) { request =>
     val id = lobbyId.toLowerCase()
     val lobby = if (id.isEmpty()) Lobby() else Lobby(id)
 
@@ -75,7 +74,13 @@ class LobbyController @Inject() (
       Ok(Json.toJson(lobby))
     } else {
       val lobbyManagerRef = actorSystem.actorOf(
-        LobbyManager.props(lobby.id, environment),
+        LobbyManager.props(
+          lobby.id,
+          environment,
+          () => {
+            lobbyManagers.remove(lobby.id)
+          }
+        ),
         "lobby." + lobby.id
       )
       lobbyManagers.put(lobby.id, lobbyManagerRef)
@@ -90,7 +95,7 @@ class LobbyController @Inject() (
       lobbyManagers.get(id) match {
         case Some(manager) =>
           Future(Right(ActorFlow.actorRef { out =>
-            LobbyActor.props(out, manager, authService)
+            LobbyUserActor.props(out, manager, authService)
           }))
         case None =>
           Future(

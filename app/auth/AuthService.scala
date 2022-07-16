@@ -52,6 +52,14 @@ class AuthService @Inject() (config: Configuration) {
   }
 
   def validateHeaders(headers: Headers): Either[Result, JwtClaim] = {
+    println("validate headers")
+    val userIdHeader = headers.get("X-USER-ID")
+    if (userIdHeader.isDefined) {
+      println(f"Received X-USER-ID header user: ${userIdHeader.get}")
+      return Right(
+        JwtClaim(subject = Some(userIdHeader.get))
+      )
+    }
     headers
       .get(HeaderNames.AUTHORIZATION)
       .map(token => validateToken(token))

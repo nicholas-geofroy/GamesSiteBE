@@ -24,19 +24,12 @@ class UserController @Inject() (
     println(f"get user ${userId}")
     um.getUser(userId)
       .transform {
-        case Success(optUser) =>
-          optUser match {
-            case Some(user) => Try(Ok(Json.toJson(user)))
-            case None => Try(NotFound)
-          }
+        case Success(user) =>
+          Try(Ok(Json.toJson(user)))
         case Failure(exception) =>
           println("Error in getUserDisplayName: ")
           println(exception)
-          Try(
-            InternalServerError(
-              Json.toJson(Json.obj("message" -> exception.getMessage()))
-            )
-          )
+          Try(NotFound)
       }
   }
 }

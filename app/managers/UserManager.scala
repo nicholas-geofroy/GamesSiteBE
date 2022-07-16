@@ -29,7 +29,8 @@ class UserManager @Inject() (
   val codecRegistry =
     fromRegistries(fromProviders(userCodecProvider), getBaseCodecRegistry())
 
-  val database: MongoDatabase = getDatabase(config).withCodecRegistry(codecRegistry)
+  val database: MongoDatabase =
+    getDatabase(config).withCodecRegistry(codecRegistry)
   val userCollection: MongoCollection[User] = database.getCollection("users")
 
   def createUser(request: NewUserRequest): Future[User] = {
@@ -43,8 +44,8 @@ class UserManager @Inject() (
       })
   }
 
-  def getUser(userId: String): Future[Option[User]] = {
-    println("get user")
-    return authManager.getUser(userId)
+  def getUser(userId: String): Future[User] = {
+    println(f"get user ${userId}")
+    return userCollection.find(equal("id", userId)).first().head()
   }
 }
